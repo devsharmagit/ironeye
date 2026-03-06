@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pose } from '@mediapipe/pose';
-import type {Results} from '@mediapipe/pose';
-import { Camera } from '@mediapipe/camera_utils';
+import * as poseModule from '@mediapipe/pose';
+import * as cameraUtils from '@mediapipe/camera_utils';
+
+const { Pose } = poseModule;
+const { Camera } = cameraUtils;
+
+export type Results = poseModule.Results;
 
 /**
  * Custom hook to initialize MediaPipe Pose and process video frames
@@ -10,15 +14,15 @@ export function usePoseDetection(
   videoElement: HTMLVideoElement | null,
   onResults: (results: Results) => void
 ) {
-  const poseRef = useRef<Pose | null>(null);
-  const cameraRef = useRef<Camera | null>(null);
+  const poseRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!videoElement) return;
 
     const pose = new Pose({
-      locateFile: (file) => {
+      locateFile: (file: string) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
       }
     });

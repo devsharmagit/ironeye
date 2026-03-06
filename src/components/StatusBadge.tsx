@@ -1,4 +1,4 @@
-import { PushUpState } from '../utils/repCounter';
+import type { PushUpState } from '../utils/repCounter';
 
 interface StatusBadgeProps {
   state: PushUpState;

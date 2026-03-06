@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Results } from '@mediapipe/pose';
 import { useCamera } from './hooks/useCamera';
 import { usePoseDetection } from './hooks/usePoseDetection';
+import type { Results } from './hooks/usePoseDetection';
 import { VideoCanvas } from './components/VideoCanvas';
 import { Counter } from './components/Counter';
 import { StatusBadge } from './components/StatusBadge';
 import { calculateAngle } from './utils/angles';
-import { updateRepCount, PushUpState } from './utils/repCounter';
+import { updateRepCount } from './utils/repCounter';
+import type { PushUpState } from './utils/repCounter';
 import './App.css';
 
 function App() {

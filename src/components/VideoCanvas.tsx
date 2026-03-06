@@ -1,10 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { Results } from '@mediapipe/pose';
-import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
-import { POSE_CONNECTIONS } from '@mediapipe/pose';
+import * as poseModule from '@mediapipe/pose';
+import * as drawingUtils from '@mediapipe/drawing_utils';
+
+const { POSE_CONNECTIONS } = poseModule;
+const { drawConnectors, drawLandmarks } = drawingUtils;
+
+export type Results = poseModule.Results;
 
 interface VideoCanvasProps {
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   results: Results | null;
 }
 
