@@ -12,9 +12,10 @@ npm install
 
 This will install:
 - React 19 and React DOM
-- MediaPipe Pose, Camera Utils, and Drawing Utils
 - Tailwind CSS for styling
 - TypeScript and Vite for development
+
+**Note:** MediaPipe is loaded via CDN scripts in `index.html` (not npm packages) to avoid ESM/UMD compatibility issues with Vite.
 
 ### 2. Start Development Server
 
@@ -90,11 +91,12 @@ src/
 
 ## How It Works
 
-1. **Camera Access**: `useCamera` hook requests webcam access
-2. **Pose Detection**: MediaPipe Pose detects 33 body landmarks in real-time
-3. **Angle Calculation**: Elbow angle is computed from shoulder-elbow-wrist landmarks
-4. **State Machine**: Tracks UP/DOWN transitions based on angle thresholds
-5. **Rep Counting**: Increments counter on complete UP → DOWN → UP cycle
+1. **MediaPipe Loading**: CDN scripts in `index.html` load MediaPipe globally before React boots
+2. **Camera Access**: `useCamera` hook requests webcam access
+3. **Pose Detection**: MediaPipe Pose detects 33 body landmarks in real-time
+4. **Angle Calculation**: Elbow angle is computed from shoulder-elbow-wrist landmarks
+5. **State Machine**: Tracks UP/DOWN transitions based on angle thresholds
+6. **Rep Counting**: Increments counter on complete UP → DOWN → UP cycle
 
 ## Next Steps
 

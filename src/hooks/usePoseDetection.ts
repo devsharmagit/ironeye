@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import * as poseModule from '@mediapipe/pose';
-import * as cameraUtils from '@mediapipe/camera_utils';
-
-const { Pose } = poseModule;
-const { Camera } = cameraUtils;
-
-export type Results = poseModule.Results;
 
 /**
  * Custom hook to initialize MediaPipe Pose and process video frames
+ * Uses global Pose and Camera from CDN scripts loaded in index.html
  */
 export function usePoseDetection(
   videoElement: HTMLVideoElement | null,
-  onResults: (results: Results) => void
+  onResults: (results: any) => void
 ) {
   const poseRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
@@ -21,10 +15,10 @@ export function usePoseDetection(
   useEffect(() => {
     if (!videoElement) return;
 
+    // Pose and Camera are global — loaded from CDN in index.html
     const pose = new Pose({
-      locateFile: (file: string) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-      }
+      locateFile: (file: string) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
 
     pose.setOptions({
@@ -33,14 +27,12 @@ export function usePoseDetection(
       enableSegmentation: false,
       smoothSegmentation: false,
       minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      minTrackingConfidence: 0.5,
     });
 
     pose.onResults(onResults);
-
     poseRef.current = pose;
 
-    // Initialize camera
     const camera = new Camera(videoElement, {
       onFrame: async () => {
         if (poseRef.current) {
@@ -48,22 +40,15 @@ export function usePoseDetection(
         }
       },
       width: 1280,
-      height: 720
+      height: 720,
     });
 
     cameraRef.current = camera;
-
-    camera.start().then(() => {
-      setIsLoading(false);
-    });
+    camera.start().then(() => setIsLoading(false));
 
     return () => {
-      if (cameraRef.current) {
-        cameraRef.current.stop();
-      }
-      if (poseRef.current) {
-        poseRef.current.close();
-      }
+      cameraRef.current?.stop();
+      poseRef.current?.close();
     };
   }, [videoElement, onResults]);
 

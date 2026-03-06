@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useCamera } from './hooks/useCamera';
 import { usePoseDetection } from './hooks/usePoseDetection';
-import type { Results } from './hooks/usePoseDetection';
 import { VideoCanvas } from './components/VideoCanvas';
 import { Counter } from './components/Counter';
 import { StatusBadge } from './components/StatusBadge';
@@ -14,11 +13,11 @@ function App() {
   const [repCount, setRepCount] = useState(0);
   const [state, setState] = useState<PushUpState>('IDLE');
   const [currentAngle, setCurrentAngle] = useState(0);
-  const [results, setResults] = useState<Results | null>(null);
+  const [results, setResults] = useState<any>(null);
 
   const { videoRef, isReady, error } = useCamera();
 
-  const handleResults = useCallback((results: Results) => {
+  const handleResults = useCallback((results: any) => {
     setResults(results);
 
     if (results.poseLandmarks) {

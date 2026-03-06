@@ -1,15 +1,8 @@
 import { useEffect, useRef } from 'react';
-import * as poseModule from '@mediapipe/pose';
-import * as drawingUtils from '@mediapipe/drawing_utils';
-
-const { POSE_CONNECTIONS } = poseModule;
-const { drawConnectors, drawLandmarks } = drawingUtils;
-
-export type Results = poseModule.Results;
 
 interface VideoCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  results: Results | null;
+  results: any;
 }
 
 export function VideoCanvas({ videoRef, results }: VideoCanvasProps) {
@@ -30,6 +23,7 @@ export function VideoCanvas({ videoRef, results }: VideoCanvasProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw pose landmarks and connections
+    // drawConnectors, drawLandmarks, and POSE_CONNECTIONS are global from CDN
     if (results.poseLandmarks) {
       drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
         color: '#00FF00',
