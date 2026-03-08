@@ -33,20 +33,72 @@ declare const POSE_CONNECTIONS: any;
 
 ### 3. Usage in Code
 
-No imports needed! Just use the globals directly:
+No imports needed! Just use the globals directly with proper ref stabilization:
 
 ```typescript
 // src/hooks/usePoseDetection.ts
-const pose = new Pose({
-  locateFile: (file: string) =>
-    `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-});
+export function usePoseDetection(
+  videoElement: HTMLVideoElement | null,
+  onResults: (results: any) => void
+) {
+  const poseRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+  const onResultsRef = useRef(onResults);
+  const [isLoading, setIsLoading] = useState(true);
 
-const camera = new Camera(videoElement, {
-  onFrame: async () => {
-    await pose.send({ image: videoElement });
-  },
-});
+  // Keep the ref updated without triggering re-runs
+  useEffect(() => {
+    onResultsRef.current = onResults;
+  }, [onResults]);
+
+  useEffect(() => {
+    if (!videoElement) return;
+
+    let cancelled = false; // guard against stale async init
+
+    const pose = new (window as any).Pose({
+      locateFile: (file: string) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      smoothSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    // Use the ref — never changes identity
+    pose.onResults((results: any) => onResultsRef.current(results));
+    poseRef.current = pose;
+
+    const camera = new (window as any).Camera(videoElement, {
+      onFrame: async () => {
+        if (poseRef.current && !cancelled) {
+          await poseRef.current.send({ image: videoElement });
+        }
+      },
+      width: 1280,
+      height: 720,
+    });
+
+    cameraRef.current = camera;
+    camera.start().then(() => {
+      if (!cancelled) setIsLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+      cameraRef.current?.stop();
+      // Delay close slightly — gives WASM time to finish any in-flight frame
+      setTimeout(() => poseRef.current?.close(), 300);
+    };
+  }, [videoElement]); // ← onResults removed from deps, handled via ref
+
+  return { isLoading };
+}
 ```
 
 ```typescript
@@ -64,6 +116,8 @@ drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
 ✅ **Browser caching** - CDN scripts cached across sites  
 ✅ **Official approach** - This is how MediaPipe intends browser usage  
 ✅ **Simpler setup** - No npm packages to manage  
+✅ **Stable callbacks** - Uses refs to prevent unnecessary re-renders  
+✅ **Proper cleanup** - Guards against stale async operations  
 
 ## Package.json
 
@@ -125,6 +179,46 @@ Ensure `src/mediapipe.d.ts` exists with the global declarations.
 ### Slow initial load
 
 MediaPipe WASM files are ~2-3MB and load on first use. This is normal and happens with both CDN and npm approaches.
+
+## Performance Optimizations
+
+### Callback Stabilization
+
+The hook uses a ref pattern to prevent unnecessary re-renders:
+
+```typescript
+const onResultsRef = useRef(onResults);
+
+// Update ref without triggering effect re-run
+useEffect(() => {
+  onResultsRef.current = onResults;
+}, [onResults]);
+
+// Use ref in pose.onResults
+pose.onResults((results: any) => onResultsRef.current(results));
+```
+
+This prevents the MediaPipe initialization from re-running every time the parent component re-renders.
+
+### Cleanup Guards
+
+The hook uses a `cancelled` flag to prevent state updates after unmount:
+
+```typescript
+let cancelled = false;
+
+camera.start().then(() => {
+  if (!cancelled) setIsLoading(false);
+});
+
+return () => {
+  cancelled = true;
+  cameraRef.current?.stop();
+  setTimeout(() => poseRef.current?.close(), 300);
+};
+```
+
+The 300ms delay before closing Pose gives WASM time to finish any in-flight frames.
 
 ## References
 

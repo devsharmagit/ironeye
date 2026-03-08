@@ -10,13 +10,20 @@ export function usePoseDetection(
 ) {
   const poseRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
+  const onResultsRef = useRef(onResults);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Keep the ref updated without triggering re-runs
+  useEffect(() => {
+    onResultsRef.current = onResults;
+  }, [onResults]);
 
   useEffect(() => {
     if (!videoElement) return;
 
-    // Pose and Camera are global — loaded from CDN in index.html
-    const pose = new Pose({
+    let cancelled = false; // guard against stale async init
+
+    const pose = new (window as any).Pose({
       locateFile: (file: string) =>
         `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
@@ -30,12 +37,13 @@ export function usePoseDetection(
       minTrackingConfidence: 0.5,
     });
 
-    pose.onResults(onResults);
+    // Use the ref — never changes identity
+    pose.onResults((results: any) => onResultsRef.current(results));
     poseRef.current = pose;
 
-    const camera = new Camera(videoElement, {
+    const camera = new (window as any).Camera(videoElement, {
       onFrame: async () => {
-        if (poseRef.current) {
+        if (poseRef.current && !cancelled) {
           await poseRef.current.send({ image: videoElement });
         }
       },
@@ -44,13 +52,17 @@ export function usePoseDetection(
     });
 
     cameraRef.current = camera;
-    camera.start().then(() => setIsLoading(false));
+    camera.start().then(() => {
+      if (!cancelled) setIsLoading(false);
+    });
 
     return () => {
+      cancelled = true;
       cameraRef.current?.stop();
-      poseRef.current?.close();
+      // Delay close slightly — gives WASM time to finish any in-flight frame
+      setTimeout(() => poseRef.current?.close(), 300);
     };
-  }, [videoElement, onResults]);
+  }, [videoElement]); // ← onResults removed from deps, handled via ref
 
   return { isLoading };
 }
